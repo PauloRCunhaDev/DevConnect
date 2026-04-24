@@ -51,6 +51,14 @@ public class JwtUtil {
         return isTokenValidForType(token, REFRESH_TOKEN_TYPE);
     }
 
+    public long getAccessExpirationMs() {
+        return accessExpirationMs;
+    }
+
+    public long getRefreshExpirationMs() {
+        return refreshExpirationMs;
+    }
+
     private String buildToken(String subject, String tokenType, long expirationMs) {
         Instant now = Instant.now();
 
