@@ -2,8 +2,10 @@ package com.devconnect.api_service.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.devconnect.api_service.dto.UpdateUserProfileRequest;
 import com.devconnect.api_service.dto.UserProfileResponse;
 import com.devconnect.api_service.exception.ResourceNotFoundException;
 import com.devconnect.api_service.model.User;
@@ -50,5 +52,26 @@ class UserServiceTest {
 
         assertThrows(ResourceNotFoundException.class,
                 () -> userService.getPublicProfileByUsername("unknown"));
+    }
+
+    @Test
+    void shouldUpdateCurrentUserProfile() {
+        User user = new User();
+        user.setId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+        user.setName("Old Name");
+        user.setUsername("paulodev");
+        user.setBio("Old bio");
+        user.setCreatedAt(LocalDateTime.of(2026, 4, 28, 10, 0));
+
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest("New Name", "New bio");
+
+        when(userRepository.findByEmail("paulo@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        UserProfileResponse response = userService.updateCurrentUserProfile("paulo@example.com", request);
+
+        assertEquals("New Name", response.name());
+        assertEquals("New bio", response.bio());
+        verify(userRepository).save(user);
     }
 }

@@ -1,11 +1,15 @@
 package com.devconnect.api_service.controller;
 
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.devconnect.api_service.config.JwtAuthenticationFilter;
+import com.devconnect.api_service.dto.UpdateUserProfileRequest;
 import com.devconnect.api_service.dto.UserProfileResponse;
 import com.devconnect.api_service.exception.GlobalExceptionHandler;
 import com.devconnect.api_service.exception.ResourceNotFoundException;
@@ -18,6 +22,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(UserController.class)
@@ -62,5 +67,51 @@ class UserControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("User not found"))
                 .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void shouldUpdateCurrentUserProfile() throws Exception {
+        UserProfileResponse profileResponse = new UserProfileResponse(
+                UUID.fromString("33333333-3333-3333-3333-333333333333"),
+                "New Name",
+                "paulodev",
+                "New bio",
+                LocalDateTime.of(2026, 4, 28, 10, 0)
+        );
+
+        when(userService.updateCurrentUserProfile(anyString(), any(UpdateUserProfileRequest.class)))
+                .thenReturn(profileResponse);
+
+        String body = """
+                {
+                  "name": "New Name",
+                  "bio": "New bio"
+                }
+                """;
+
+        mockMvc.perform(put("/api/users/me")
+                        .principal(() -> "paulo@example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("New Name"))
+                .andExpect(jsonPath("$.bio").value("New bio"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUpdatePayloadIsInvalid() throws Exception {
+        String body = """
+                {
+                  "name": "",
+                  "bio": "Bio"
+                }
+                """;
+
+        mockMvc.perform(put("/api/users/me")
+                        .principal(() -> "paulo@example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
     }
 }
